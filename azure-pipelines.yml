@@ -1,0 +1,106 @@
+# Azure DevOps Pipeline Configuration
+# Build and deploy TestGenie Enterprise to Azure App Service
+
+trigger:
+- master
+- develop
+
+variables:
+  # Build Configuration
+  buildConfiguration: 'Release'
+  pythonVersion: '3.11'
+  
+  # Azure Configuration
+  azureSubscription: 'Azure-Service-Connection'    # Service connection name
+  appServiceName: 'cts-vibeappso2111-5'           # Your actual App Service name
+  resourceGroup: 'CTS-VibeAppso211'               # Your Resource Group
+
+stages:
+- stage: Build
+  displayName: 'Build TestGenie Application'
+  jobs:
+  - job: Build
+    displayName: 'Build Job'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    steps:
+    - task: UsePythonVersion@0
+      displayName: 'Use Python $(pythonVersion)'
+      inputs:
+        versionSpec: '$(pythonVersion)'
+        addToPath: true
+    
+    - script: |
+        python -m pip install --upgrade pip
+        pip install -r requirements_azure.txt
+      displayName: 'Install dependencies'
+    
+    - script: |
+        # Run tests if available
+        if [ -f "test_all_functionality.py" ]; then
+          python test_all_functionality.py
+        fi
+      displayName: 'Run Tests'
+      continueOnError: true
+    
+    - script: |
+        # Create deployment package
+        zip -r $(Build.ArtifactStagingDirectory)/testgenie-$(Build.BuildId).zip . \
+          -x "venv/*" "__pycache__/*" "*.pyc" ".git/*" ".env" "test_*.py"
+      displayName: 'Create Deployment Package'
+    
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Artifacts'
+      inputs:
+        pathToPublish: '$(Build.ArtifactStagingDirectory)'
+        artifactName: 'testgenie-package'
+
+- stage: Deploy
+  displayName: 'Deploy to Azure App Service'
+  dependsOn: Build
+  condition: and(succeeded(), eq(variables['Build.SourceBranch'], 'refs/heads/main'))
+  
+  jobs:
+  - deployment: Deploy
+    displayName: 'Deploy Job'
+    environment: 'Production'
+    pool:
+      vmImage: 'ubuntu-latest'
+    
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureWebApp@1
+            displayName: 'Deploy to Azure App Service'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appType: 'webAppLinux'
+              appName: '$(appServiceName)'
+              resourceGroupName: '$(resourceGroup)'
+              package: '$(Pipeline.Workspace)/testgenie-package/testgenie-$(Build.BuildId).zip'
+              runtimeStack: 'PYTHON|3.11'
+              startUpCommand: 'bash startup.sh'
+              
+          - task: AzureAppServiceSettings@1
+            displayName: 'Configure App Settings'
+            inputs:
+              azureSubscription: '$(azureSubscription)'
+              appName: '$(appServiceName)'
+              resourceGroupName: '$(resourceGroup)'
+              appSettings: |
+                [
+                  {
+                    "name": "FLASK_ENV",
+                    "value": "production"
+                  },
+                  {
+                    "name": "PYTHONUNBUFFERED", 
+                    "value": "1"
+                  },
+                  {
+                    "name": "SCM_DO_BUILD_DURING_DEPLOYMENT",
+                    "value": "true"
+                  }
+                ]

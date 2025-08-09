@@ -1,0 +1,23 @@
+# Azure Deployment Configuration
+[build-system]
+requires = ["setuptools>=45", "wheel", "setuptools-scm[toml]>=6.2"]
+
+[tool.azure]
+# Azure App Service Python configuration
+python_version = "3.11"
+startup_file = "application.py"
+
+[project]
+name = "testgenie-enterprise"
+version = "1.0.0"
+description = "Enterprise Test Management Platform"
+authors = [
+    {name = "TestGenie Team", email = "admin@testgenie.com"},
+]
+dependencies = [
+    "flask>=3.0.0",
+    "flask-sqlalchemy>=3.1.1",
+    "openai>=1.12.0",
+    "python-dotenv>=1.0.0",
+    "gunicorn>=21.2.0"
+]

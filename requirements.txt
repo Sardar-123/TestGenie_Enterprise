@@ -1,0 +1,28 @@
+# Production Requirements for Azure App Service
+# Generated for TestGenie Enterprise Platform
+
+# Core Flask dependencies
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
+Werkzeug==3.0.1
+
+# Database
+SQLAlchemy==2.0.25
+
+# AI Integration
+openai==1.12.0
+azure-identity==1.15.0
+
+# Utilities
+python-dotenv==1.0.0
+python-dateutil==2.8.2
+
+# Production server (optional, Azure handles this)
+gunicorn==21.2.0
+
+# Additional dependencies that might be needed
+click==8.1.7
+itsdangerous==2.1.2
+Jinja2==3.1.3
+MarkupSafe==2.1.4
+typing-extensions==4.9.0
