@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TestGenie Enterprise - Development Test</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .header-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem 0;
+        }
+        .feature-card {
+            transition: transform 0.2s;
+            height: 100%;
+        }
+        .feature-card:hover {
+            transform: translateY(-5px);
+        }
+        .api-response {
+            background-color: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 1rem;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">🚀 TestGenie Enterprise</h1>
+                    <p class="lead mb-0">AI-Powered Test Case Generation Platform</p>
+                    <small>Version 2.0.0 - Development Mode</small>
+                </div>
+                <div class="col-md-4 text-end">
+                    <span class="badge bg-success fs-6" id="status-badge">🟢 System Online</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container mt-4">
+        <!-- Feature Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">📁 File Upload</h5>
+                        <p class="card-text">Upload documents for test case generation</p>
+                        <button class="btn btn-primary btn-sm" onclick="testFileUpload()">Test Upload</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">🤖 AI Generation</h5>
+                        <p class="card-text">Generate intelligent test cases</p>
+                        <button class="btn btn-primary btn-sm" onclick="testGeneration()">Generate Tests</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">💡 Health Check</h5>
+                        <p class="card-text">Monitor system health</p>
+                        <button class="btn btn-primary btn-sm" onclick="checkHealth()">Check Health</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card feature-card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">📊 System Status</h5>
+                        <p class="card-text">View system information</p>
+                        <button class="btn btn-primary btn-sm" onclick="getStatus()">Get Status</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- File Upload Section -->
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>📤 File Upload Test</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="uploadForm" enctype="multipart/form-data">
+                            <div class="mb-3">
+                                <label for="fileInput" class="form-label">Select File</label>
+                                <input type="file" class="form-control" id="fileInput" name="file">
+                                <div class="form-text">Upload any file to test the upload functionality</div>
+                            </div>
+                            <button type="button" class="btn btn-success" onclick="uploadFile()">Upload File</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>🤖 Test Case Generation</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label">Test Type</label>
+                            <select class="form-select" id="testType">
+                                <option value="functional">Functional Testing</option>
+                                <option value="api">API Testing</option>
+                                <option value="performance">Performance Testing</option>
+                                <option value="security">Security Testing</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Number of Test Cases</label>
+                            <input type="number" class="form-control" id="numCases" value="3" min="1" max="10">
+                        </div>
+                        <button type="button" class="btn btn-info" onclick="generateTestCases()">Generate Test Cases</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Response Section -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5>📋 API Response</h5>
+                        <button class="btn btn-sm btn-outline-secondary float-end" onclick="clearResponses()">Clear</button>
+                    </div>
+                    <div class="card-body">
+                        <div id="responseArea">
+                            <p class="text-muted">API responses will appear here...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Add response to the response area
+        function addResponse(title, data, type = 'info') {
+            const responseArea = document.getElementById('responseArea');
+            const timestamp = new Date().toLocaleTimeString();
+            
+            const responseHtml = `
+                <div class="api-response border-start border-${type === 'error' ? 'danger' : 'success'} border-3 ps-3 mb-3">
+                    <h6 class="text-${type === 'error' ? 'danger' : 'success'}">${title} - ${timestamp}</h6>
+                    <pre class="mb-0 small">${JSON.stringify(data, null, 2)}</pre>
+                </div>
+            `;
+            
+            if (responseArea.innerHTML.includes('API responses will appear here')) {
+                responseArea.innerHTML = responseHtml;
+            } else {
+                responseArea.innerHTML = responseHtml + responseArea.innerHTML;
+            }
+        }
+
+        // Check health
+        async function checkHealth() {
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                addResponse('Health Check', data, 'success');
+                document.getElementById('status-badge').innerHTML = '🟢 System Healthy';
+            } catch (error) {
+                addResponse('Health Check Error', { error: error.message }, 'error');
+                document.getElementById('status-badge').innerHTML = '🔴 System Error';
+            }
+        }
+
+        // Get system status
+        async function getStatus() {
+            try {
+                const response = await fetch('/api/status');
+                const data = await response.json();
+                addResponse('System Status', data, 'success');
+            } catch (error) {
+                addResponse('Status Error', { error: error.message }, 'error');
+            }
+        }
+
+        // Upload file
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                addResponse('Upload Error', { error: 'No file selected' }, 'error');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                const response = await fetch('/api/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                addResponse('File Upload', data, response.ok ? 'success' : 'error');
+            } catch (error) {
+                addResponse('Upload Error', { error: error.message }, 'error');
+            }
+        }
+
+        // Generate test cases
+        async function generateTestCases() {
+            const testType = document.getElementById('testType').value;
+            const numCases = document.getElementById('numCases').value;
+
+            try {
+                const response = await fetch('/api/generate-test-cases', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        test_type: testType,
+                        num_cases: parseInt(numCases)
+                    })
+                });
+                const data = await response.json();
+                addResponse('Test Case Generation', data, 'success');
+            } catch (error) {
+                addResponse('Generation Error', { error: error.message }, 'error');
+            }
+        }
+
+        // Test functions for feature cards
+        function testFileUpload() {
+            document.getElementById('fileInput').click();
+        }
+
+        function testGeneration() {
+            generateTestCases();
+        }
+
+        function clearResponses() {
+            document.getElementById('responseArea').innerHTML = '<p class="text-muted">API responses will appear here...</p>';
+        }
+
+        // Initial health check
+        window.onload = function() {
+            checkHealth();
+        };
+    </script>
+</body>
+</html>

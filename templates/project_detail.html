@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - TestGenie Enterprise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-2"><i class="bi bi-folder-open"></i> {{ project.name }}</h1>
+            <p class="mb-0">{{ project.description or 'No description provided' }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('ai_generator') }}" class="btn btn-success me-2">
+                <i class="bi bi-robot"></i> Generate Tests
+            </a>
+            <button class="btn btn-primary" onclick="createTestCase()">
+                <i class="bi bi-plus-circle"></i> New Test Case
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Project Statistics -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-list-check text-primary fs-1"></i>
+                <h3 class="mt-2">{{ test_cases|length }}</h3>
+                <p class="text-muted mb-0">Test Cases</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-collection text-success fs-1"></i>
+                <h3 class="mt-2">{{ test_suites|length }}</h3>
+                <p class="text-muted mb-0">Test Suites</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-play-circle text-warning fs-1"></i>
+                <h3 class="mt-2">0</h3>
+                <p class="text-muted mb-0">Test Runs</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-center">
+            <div class="card-body">
+                <i class="bi bi-graph-up text-info fs-1"></i>
+                <h3 class="mt-2">0%</h3>
+                <p class="text-muted mb-0">Coverage</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Details -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-list-check"></i> Test Cases ({{ test_cases|length }})</h5>
+                <a href="{{ url_for('test_cases_list') }}?project_id={{ project.id }}" class="btn btn-sm btn-outline-primary">
+                    View All
+                </a>
+            </div>
+            <div class="card-body">
+                {% if test_cases %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Priority</th>
+                                    <th>Status</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for test_case in test_cases[:10] %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ test_case.title }}</strong>
+                                        <br>
+                                        <small class="text-muted">{{ test_case.description[:50] }}{% if test_case.description|length > 50 %}...{% endif %}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'danger' if test_case.priority == 'High' else 'warning' if test_case.priority == 'Medium' else 'secondary' }}">
+                                            {{ test_case.priority }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-{{ 'success' if test_case.status == 'Active' else 'secondary' }}">
+                                            {{ test_case.status }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <small>{{ test_case.created_at[:10] if test_case.created_at else 'N/A' }}</small>
+                                    </td>
+                                    <td>
+                                        <a href="{{ url_for('test_case_detail', test_case_id=test_case.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-list-check text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No Test Cases Yet</h5>
+                        <p class="text-muted">Create test cases manually or generate them with AI</p>
+                        <div>
+                            <a href="{{ url_for('ai_generator') }}" class="btn btn-success me-2">
+                                <i class="bi bi-robot"></i> Generate with AI
+                            </a>
+                            <button class="btn btn-primary" onclick="createTestCase()">
+                                <i class="bi bi-plus-circle"></i> Create Manually
+                            </button>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- Project Information -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-info-circle"></i> Project Information</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row">
+                    <dt class="col-sm-4">Name:</dt>
+                    <dd class="col-sm-8">{{ project.name }}</dd>
+                    <dt class="col-sm-4">Created:</dt>
+                    <dd class="col-sm-8">{{ project.created_at[:10] if project.created_at else 'N/A' }}</dd>
+                    <dt class="col-sm-4">Created By:</dt>
+                    <dd class="col-sm-8">{{ project.created_by or 'System' }}</dd>
+                    <dt class="col-sm-4">ID:</dt>
+                    <dd class="col-sm-8"><code>{{ project.id[:8] }}</code></dd>
+                </dl>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-activity"></i> Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-plus-circle text-success me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Project created</h6>
+                            <small class="text-muted">{{ project.created_at[:10] if project.created_at else 'Recently' }}</small>
+                        </div>
+                    </div>
+                    {% if test_cases %}
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-list-check text-primary me-3"></i>
+                        <div>
+                            <h6 class="mb-1">{{ test_cases|length }} test cases added</h6>
+                            <small class="text-muted">Various times</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Test Case Modal -->
+<div class="modal fade" id="createTestCaseModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Create New Test Case</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createTestCaseForm">
+                    <div class="mb-3">
+                        <label for="testCaseTitle" class="form-label">Title *</label>
+                        <input type="text" class="form-control" id="testCaseTitle" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="testCaseDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="testCaseDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="testCaseSteps" class="form-label">Test Steps</label>
+                        <textarea class="form-control" id="testCaseSteps" rows="4" placeholder="Enter each step on a new line"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="testCaseExpected" class="form-label">Expected Result</label>
+                        <textarea class="form-control" id="testCaseExpected" rows="2"></textarea>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="testCasePriority" class="form-label">Priority</label>
+                            <select class="form-select" id="testCasePriority">
+                                <option value="Medium" selected>Medium</option>
+                                <option value="High">High</option>
+                                <option value="Low">Low</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="testCaseStatus" class="form-label">Status</label>
+                            <select class="form-select" id="testCaseStatus">
+                                <option value="Draft" selected>Draft</option>
+                                <option value="Active">Active</option>
+                            </select>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitTestCase()">
+                    <i class="bi bi-plus-circle"></i> Create Test Case
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function createTestCase() {
+    const modal = new bootstrap.Modal(document.getElementById('createTestCaseModal'));
+    modal.show();
+}
+
+function submitTestCase() {
+    const title = document.getElementById('testCaseTitle').value.trim();
+    const description = document.getElementById('testCaseDescription').value.trim();
+    const steps = document.getElementById('testCaseSteps').value.trim();
+    const expected = document.getElementById('testCaseExpected').value.trim();
+    const priority = document.getElementById('testCasePriority').value;
+    const status = document.getElementById('testCaseStatus').value;
+    
+    if (!title) {
+        alert('Please enter a test case title');
+        return;
+    }
+    
+    const stepsArray = steps ? steps.split('\n').filter(step => step.trim()) : [];
+    
+    const testCaseData = {
+        title: title,
+        description: description,
+        steps: stepsArray,
+        expected_result: expected,
+        priority: priority,
+        status: status,
+        project_id: '{{ project.id }}',
+        tags: ['manual']
+    };
+    
+    fetch('/api/test-cases', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testCaseData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            bootstrap.Modal.getInstance(document.getElementById('createTestCaseModal')).hide();
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating test case');
+    });
+}
+</script>
+{% endblock %}

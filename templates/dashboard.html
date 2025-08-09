@@ -1,0 +1,259 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - TestGenie Enterprise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="mb-2"><i class="bi bi-speedometer2"></i> Dashboard</h1>
+    <p class="mb-0">Welcome to TestGenie Enterprise Test Management Platform</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card text-center">
+            <div class="card-body">
+                <i class="bi bi-folder text-primary fs-1"></i>
+                <h3 class="mt-2">{{ stats.total_projects }}</h3>
+                <p class="text-muted mb-0">Total Projects</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card text-center">
+            <div class="card-body">
+                <i class="bi bi-list-check text-success fs-1"></i>
+                <h3 class="mt-2">{{ stats.total_test_cases }}</h3>
+                <p class="text-muted mb-0">Test Cases</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card text-center">
+            <div class="card-body">
+                <i class="bi bi-collection text-info fs-1"></i>
+                <h3 class="mt-2">{{ stats.total_test_suites }}</h3>
+                <p class="text-muted mb-0">Test Suites</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card text-center">
+            <div class="card-body">
+                <i class="bi bi-play-circle text-warning fs-1"></i>
+                <h3 class="mt-2">{{ stats.active_test_runs }}</h3>
+                <p class="text-muted mb-0">Active Runs</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-lightning-charge"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <button class="btn btn-primary" onclick="createProject()">
+                                <i class="bi bi-plus-circle"></i> New Project
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <a href="{{ url_for('ai_generator') }}" class="btn btn-success">
+                                <i class="bi bi-robot"></i> Generate Tests
+                            </a>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <button class="btn btn-info" onclick="createTestRun()">
+                                <i class="bi bi-play-circle"></i> New Test Run
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="d-grid">
+                            <button class="btn btn-outline-secondary">
+                                <i class="bi bi-bar-chart"></i> View Reports
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Projects -->
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-folder"></i> Recent Projects</h5>
+                <a href="{{ url_for('projects_list') }}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if projects %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Project Name</th>
+                                    <th>Description</th>
+                                    <th>Created</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for project in projects %}
+                                <tr>
+                                    <td><strong>{{ project.name }}</strong></td>
+                                    <td>{{ project.description[:50] }}{% if project.description|length > 50 %}...{% endif %}</td>
+                                    <td>{{ project.created_at[:10] if project.created_at else 'N/A' }}</td>
+                                    <td>
+                                        <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-sm btn-outline-primary">
+                                            <i class="bi bi-eye"></i> View
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="bi bi-folder-x text-muted" style="font-size: 3rem;"></i>
+                        <h5 class="text-muted mt-3">No Projects Yet</h5>
+                        <p class="text-muted">Create your first project to get started</p>
+                        <button class="btn btn-primary" onclick="createProject()">
+                            <i class="bi bi-plus-circle"></i> Create Project
+                        </button>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-activity"></i> Recent Activity</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-plus-circle text-success me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Test cases generated</h6>
+                            <p class="mb-1 small text-muted">AI generated 5 test cases for Login module</p>
+                            <small class="text-muted">2 hours ago</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-play-circle text-primary me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Test run started</h6>
+                            <p class="mb-1 small text-muted">Regression Suite v1.0 execution started</p>
+                            <small class="text-muted">4 hours ago</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-folder text-info me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Project created</h6>
+                            <p class="mb-1 small text-muted">New project "E-commerce Platform" created</p>
+                            <small class="text-muted">1 day ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Create Project Modal -->
+<div class="modal fade" id="createProjectModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createProjectForm">
+                    <div class="mb-3">
+                        <label for="projectName" class="form-label">Project Name</label>
+                        <input type="text" class="form-control" id="projectName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="projectDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="projectDescription" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitProject()">Create Project</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function createProject() {
+    const modal = new bootstrap.Modal(document.getElementById('createProjectModal'));
+    modal.show();
+}
+
+function createTestRun() {
+    alert('Test run creation feature coming soon!');
+}
+
+function submitProject() {
+    const name = document.getElementById('projectName').value;
+    const description = document.getElementById('projectDescription').value;
+    
+    if (!name) {
+        alert('Please enter a project name');
+        return;
+    }
+    
+    fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: name,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating project');
+    });
+}
+
+// Auto-refresh dashboard stats every 30 seconds
+setInterval(() => {
+    fetch('/api/dashboard-stats')
+        .then(response => response.json())
+        .then(data => {
+            // Update stats if needed
+        });
+}, 30000);
+</script>
+{% endblock %}

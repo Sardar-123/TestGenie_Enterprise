@@ -1,0 +1,551 @@
+{% extends "base.html" %}
+
+{% block title %}AI Test Generator - TestGenie Enterprise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="mb-2"><i class="bi bi-robot"></i> AI Test Generator</h1>
+    <p class="mb-0">Generate comprehensive test cases from your requirements, user stories, and documentation</p>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-upload"></i> Upload & Generate</h5>
+            </div>
+            <div class="card-body">
+                <form id="generateTestsForm" enctype="multipart/form-data">
+                    <div class="mb-4">
+                        <label for="projectSelect" class="form-label">Target Project *</label>
+                        <select class="form-select" id="projectSelect" required>
+                            <option value="">Select a project...</option>
+                            <option value="default">Default Project</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="fileUpload" class="form-label">Upload Requirements/Documentation</label>
+                        <input type="file" class="form-control" id="fileUpload" accept=".pdf,.doc,.docx,.txt,.md,.json,.xml">
+                        <div class="form-text">
+                            Supported formats: PDF, Word documents, Text files, Markdown, JSON, XML
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="textInput" class="form-label">Or Enter Requirements Manually</label>
+                        <textarea class="form-control" id="textInput" rows="8" 
+                                  placeholder="Paste your requirements, user stories, or feature descriptions here...
+
+Example:
+- User should be able to login with email and password
+- System should validate email format
+- User should receive error message for invalid credentials
+- User should be redirected to dashboard after successful login"></textarea>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <label for="testType" class="form-label">Test Type</label>
+                            <select class="form-select" id="testType">
+                                <option value="functional">Functional Testing</option>
+                                <option value="ui">UI/UX Testing</option>
+                                <option value="api">API Testing</option>
+                                <option value="performance">Performance Testing</option>
+                                <option value="security">Security Testing</option>
+                                <option value="integration">Integration Testing</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="testCount" class="form-label">Number of Test Cases</label>
+                            <select class="form-select" id="testCount">
+                                <option value="5">5 test cases</option>
+                                <option value="10" selected>10 test cases</option>
+                                <option value="15">15 test cases</option>
+                                <option value="20">20 test cases</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="d-grid">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="bi bi-lightning-charge"></i> Generate Test Cases with AI
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Generated Results -->
+        <div id="resultsSection" class="mt-4" style="display: none;">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="bi bi-check-circle"></i> Generated Test Cases</h5>
+                    <button class="btn btn-sm btn-success" onclick="saveAllTestCases()">
+                        <i class="bi bi-save"></i> Save All to Project
+                    </button>
+                </div>
+                <div class="card-body">
+                    <div id="generatedTestCases"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-4">
+        <!-- AI Provider Status -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-cpu"></i> AI Provider Status</h5>
+            </div>
+            <div class="card-body">
+                <div id="aiProviderStatus">
+                    <div class="text-center">
+                        <div class="spinner-border spinner-border-sm text-primary" role="status"></div>
+                        <small class="ms-2">Checking AI provider status...</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Features -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-stars"></i> AI Capabilities</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-check-circle-fill text-success me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Smart Analysis</h6>
+                            <p class="mb-0 small text-muted">Analyzes requirements to identify test scenarios</p>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-check-circle-fill text-success me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Edge Case Detection</h6>
+                            <p class="mb-0 small text-muted">Automatically identifies boundary conditions</p>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-check-circle-fill text-success me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Multi-format Support</h6>
+                            <p class="mb-0 small text-muted">Processes various document formats</p>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-check-circle-fill text-success me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Test Optimization</h6>
+                            <p class="mb-0 small text-muted">Prioritizes tests by risk and importance</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Generations -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Recent Generations</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-file-text text-primary me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Login Module Tests</h6>
+                            <p class="mb-1 small text-muted">Generated 8 test cases</p>
+                            <small class="text-muted">2 hours ago</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-file-text text-primary me-3"></i>
+                        <div>
+                            <h6 class="mb-1">API Endpoint Tests</h6>
+                            <p class="mb-1 small text-muted">Generated 12 test cases</p>
+                            <small class="text-muted">1 day ago</small>
+                        </div>
+                    </div>
+                    <div class="list-group-item d-flex align-items-start">
+                        <i class="bi bi-file-text text-primary me-3"></i>
+                        <div>
+                            <h6 class="mb-1">Checkout Flow Tests</h6>
+                            <p class="mb-1 small text-muted">Generated 15 test cases</p>
+                            <small class="text-muted">3 days ago</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status"></div>
+                <h5>AI is analyzing your requirements...</h5>
+                <p class="text-muted mb-0">This may take a few moments</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.getElementById('generateTestsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    generateTests();
+});
+
+function generateTests() {
+    const fileInput = document.getElementById('fileUpload');
+    const textInput = document.getElementById('textInput').value.trim();
+    const projectId = document.getElementById('projectSelect').value;
+    const testType = document.getElementById('testType').value;
+    const testCount = document.getElementById('testCount').value;
+
+    if (!projectId) {
+        alert('Please select a project');
+        return;
+    }
+
+    if (!fileInput.files[0] && !textInput) {
+        alert('Please upload a file or enter requirements manually');
+        return;
+    }
+
+    // Show loading modal
+    const loadingModal = new bootstrap.Modal(document.getElementById('loadingModal'));
+    loadingModal.show();
+
+    // Prepare the data for AI generation
+    const requestData = {
+        requirements: textInput || "File uploaded for analysis",
+        project_id: projectId,
+        test_type: testType,
+        count: parseInt(testCount)
+    };
+
+    // Call the AI generation API
+    fetch('/api/ai-generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        loadingModal.hide();
+        
+        if (data.error) {
+            alert('Error generating tests: ' + data.error);
+            return;
+        }
+        
+        // Display the generated test cases
+        displayResults(data.generated_cases, data.ai_provider, data.provider_details);
+    })
+    .catch(error => {
+        loadingModal.hide();
+        console.error('Error:', error);
+        alert('Error generating test cases. Please try again.');
+    });
+}
+
+function generateMockTestCases(testType, count) {
+    const testCases = [];
+    const testTypeTemplates = {
+        'functional': {
+            prefix: 'Functional Test',
+            scenarios: [
+                'Verify user can complete the primary workflow',
+                'Validate input field validations',
+                'Test error handling for invalid inputs',
+                'Verify navigation between pages',
+                'Test form submission functionality'
+            ]
+        },
+        'ui': {
+            prefix: 'UI Test',
+            scenarios: [
+                'Verify responsive design on mobile devices',
+                'Test element visibility and positioning',
+                'Validate color scheme and branding',
+                'Test interactive elements behavior',
+                'Verify accessibility compliance'
+            ]
+        },
+        'api': {
+            prefix: 'API Test',
+            scenarios: [
+                'Verify successful API response',
+                'Test invalid request parameters',
+                'Validate response data structure',
+                'Test API authentication',
+                'Verify error response codes'
+            ]
+        },
+        'performance': {
+            prefix: 'Performance Test',
+            scenarios: [
+                'Verify page load time under normal load',
+                'Test system behavior under high load',
+                'Validate memory usage optimization',
+                'Test database query performance',
+                'Verify resource loading efficiency'
+            ]
+        }
+    };
+
+    const template = testTypeTemplates[testType] || testTypeTemplates['functional'];
+    
+    for (let i = 0; i < count; i++) {
+        const scenario = template.scenarios[i % template.scenarios.length];
+        testCases.push({
+            id: `tc_${Date.now()}_${i}`,
+            title: `${template.prefix} ${i + 1}: ${scenario}`,
+            description: `Automated test case generated for ${testType} testing scenario`,
+            steps: [
+                'Navigate to the application',
+                'Perform the required action',
+                'Verify the expected behavior',
+                'Validate the outcome'
+            ],
+            expected_result: 'System should behave as expected without errors',
+            priority: ['High', 'Medium', 'Low'][i % 3],
+            tags: [testType, 'ai-generated', 'automated']
+        });
+    }
+    
+    return testCases;
+}
+
+function displayResults(testCases, aiProvider, providerDetails) {
+    const resultsSection = document.getElementById('resultsSection');
+    const container = document.getElementById('generatedTestCases');
+    
+    let html = '';
+    
+    // Add AI provider info header
+    if (aiProvider) {
+        html += `
+            <div class="alert alert-info mb-3">
+                <div class="d-flex align-items-center">
+                    <i class="bi bi-robot me-2"></i>
+                    <div>
+                        <strong>Generated using ${aiProvider.charAt(0).toUpperCase() + aiProvider.slice(1)}</strong>
+                        ${providerDetails && providerDetails[aiProvider] ? 
+                            `<small class="d-block text-muted">Model: ${providerDetails[aiProvider].model || 'N/A'}</small>` : 
+                            ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    testCases.forEach((testCase, index) => {
+        html += `
+            <div class="card mb-3">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">${testCase.title}</h6>
+                    <div>
+                        <span class="badge bg-${testCase.priority === 'High' ? 'danger' : testCase.priority === 'Medium' ? 'warning' : 'secondary'}">${testCase.priority}</span>
+                        <button class="btn btn-sm btn-outline-success ms-2" onclick="saveTestCase(${index})">
+                            <i class="bi bi-save"></i> Save
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="mb-2">${testCase.description}</p>
+                    <h6>Test Steps:</h6>
+                    <ol class="mb-2">
+                        ${testCase.steps.map(step => `<li>${step}</li>`).join('')}
+                    </ol>
+                    <h6>Expected Result:</h6>
+                    <p class="mb-2">${testCase.expected_result}</p>
+                    <div>
+                        ${testCase.tags.map(tag => `<span class="badge bg-light text-dark me-1">${tag}</span>`).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    
+    container.innerHTML = html;
+    resultsSection.style.display = 'block';
+    
+    // Store test cases globally for saving
+    window.generatedTestCases = testCases;
+}
+
+function saveTestCase(index) {
+    const testCase = window.generatedTestCases[index];
+    const projectId = document.getElementById('projectSelect').value;
+    
+    fetch('/api/test-cases', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            ...testCase,
+            project_id: projectId
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert('Test case saved successfully!');
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error saving test case');
+    });
+}
+
+function saveAllTestCases() {
+    if (!window.generatedTestCases) return;
+    
+    const projectId = document.getElementById('projectSelect').value;
+    let savedCount = 0;
+    
+    window.generatedTestCases.forEach(testCase => {
+        fetch('/api/test-cases', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                ...testCase,
+                project_id: projectId
+            })
+        })
+        .then(() => {
+            savedCount++;
+            if (savedCount === window.generatedTestCases.length) {
+                alert(`All ${savedCount} test cases saved successfully!`);
+            }
+        });
+    });
+}
+
+// Load projects and AI status on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Load projects for dropdown
+    fetch('/api/projects')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(projects => {
+            const select = document.getElementById('projectSelect');
+            select.innerHTML = '<option value="">Select a project...</option>';
+            
+            if (projects && projects.length > 0) {
+                projects.forEach(project => {
+                    select.innerHTML += `<option value="${project.id}">${project.name}</option>`;
+                });
+            } else {
+                // Add a default option if no projects exist
+                select.innerHTML += '<option value="default-project">Default Project</option>';
+            }
+        })
+        .catch(error => {
+            console.error('Error loading projects:', error);
+            const select = document.getElementById('projectSelect');
+            select.innerHTML = `
+                <option value="">Select a project...</option>
+                <option value="default-project">Default Project</option>
+            `;
+        });
+    
+    // Load AI provider status
+    loadAIProviderStatus();
+});
+
+function loadAIProviderStatus() {
+    fetch('/api/ai-status')
+        .then(response => response.json())
+        .then(data => {
+            displayAIProviderStatus(data.ai_providers);
+        })
+        .catch(error => {
+            console.error('Error loading AI status:', error);
+            document.getElementById('aiProviderStatus').innerHTML = `
+                <div class="alert alert-warning alert-sm">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Unable to load AI provider status
+                </div>
+            `;
+        });
+}
+
+function displayAIProviderStatus(providerData) {
+    const container = document.getElementById('aiProviderStatus');
+    
+    const primaryProvider = providerData.primary_provider;
+    const availableProviders = providerData.available_providers || [];
+    const details = providerData.provider_details || {};
+    
+    let html = '';
+    
+    if (availableProviders.length > 0) {
+        html += `
+            <div class="mb-3">
+                <div class="d-flex align-items-center mb-2">
+                    <i class="bi bi-check-circle-fill text-success me-2"></i>
+                    <strong>Primary: ${primaryProvider.charAt(0).toUpperCase() + primaryProvider.slice(1)}</strong>
+                </div>
+        `;
+        
+        if (details[primaryProvider]) {
+            const detail = details[primaryProvider];
+            if (primaryProvider === 'azure') {
+                html += `
+                    <small class="text-muted d-block">Model: ${detail.model || 'N/A'}</small>
+                    <small class="text-muted d-block">Deployment: ${detail.deployment || 'N/A'}</small>
+                    <small class="text-muted d-block">Version: ${detail.api_version || 'N/A'}</small>
+                `;
+            } else if (primaryProvider === 'openai') {
+                html += `<small class="text-muted d-block">Model: ${detail.model || 'N/A'}</small>`;
+            }
+        }
+        
+        html += '</div>';
+        
+        if (availableProviders.length > 1) {
+            html += `
+                <div class="mb-2">
+                    <small class="text-muted">Fallback providers available: ${availableProviders.filter(p => p !== primaryProvider).join(', ')}</small>
+                </div>
+            `;
+        }
+        
+        html += `
+            <div class="badge bg-success">
+                <i class="bi bi-lightning-charge"></i> AI Ready
+            </div>
+        `;
+    } else {
+        html = `
+            <div class="alert alert-warning alert-sm">
+                <i class="bi bi-exclamation-triangle"></i>
+                No AI providers configured. Using mock generation.
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
+</script>
+{% endblock %}

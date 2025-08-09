@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+
+{% block title %}Test Cases - TestGenie Enterprise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-2"><i class="bi bi-list-check"></i> Test Cases</h1>
+            <p class="mb-0">Manage and organize your test case repository</p>
+        </div>
+        <div>
+            <a href="{{ url_for('ai_generator') }}" class="btn btn-success me-2">
+                <i class="bi bi-robot"></i> Generate with AI
+            </a>
+            <button class="btn btn-light" onclick="createTestCase()">
+                <i class="bi bi-plus-circle"></i> New Test Case
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Filters and Search -->
+<div class="card mb-4">
+    <div class="card-body">
+        <div class="row align-items-end">
+            <div class="col-md-4">
+                <label for="searchInput" class="form-label">Search Test Cases</label>
+                <input type="text" class="form-control" id="searchInput" placeholder="Search by title, description...">
+            </div>
+            <div class="col-md-2">
+                <label for="priorityFilter" class="form-label">Priority</label>
+                <select class="form-select" id="priorityFilter">
+                    <option value="">All Priorities</option>
+                    <option value="High">High</option>
+                    <option value="Medium">Medium</option>
+                    <option value="Low">Low</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="statusFilter" class="form-label">Status</label>
+                <select class="form-select" id="statusFilter">
+                    <option value="">All Status</option>
+                    <option value="Draft">Draft</option>
+                    <option value="Active">Active</option>
+                    <option value="Deprecated">Deprecated</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="projectFilter" class="form-label">Project</label>
+                <select class="form-select" id="projectFilter">
+                    <option value="">All Projects</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button class="btn btn-outline-secondary w-100" onclick="clearFilters()">
+                    <i class="bi bi-x-circle"></i> Clear
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Test Cases Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Test Cases ({{ test_cases|length }})</h5>
+        <div class="btn-group" role="group">
+            <button type="button" class="btn btn-outline-secondary btn-sm active" onclick="toggleView('table')">
+                <i class="bi bi-table"></i> Table
+            </button>
+            <button type="button" class="btn btn-outline-secondary btn-sm" onclick="toggleView('cards')">
+                <i class="bi bi-grid"></i> Cards
+            </button>
+        </div>
+    </div>
+    <div class="card-body p-0">
+        {% if test_cases %}
+            <!-- Table View -->
+            <div id="tableView">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>
+                                    <input type="checkbox" class="form-check-input" id="selectAll">
+                                </th>
+                                <th>ID</th>
+                                <th>Title</th>
+                                <th>Priority</th>
+                                <th>Status</th>
+                                <th>Project</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for test_case in test_cases %}
+                            <tr>
+                                <td>
+                                    <input type="checkbox" class="form-check-input test-case-checkbox" value="{{ test_case.id }}">
+                                </td>
+                                <td><code>{{ test_case.id[:8] }}</code></td>
+                                <td>
+                                    <a href="{{ url_for('test_case_detail', test_case_id=test_case.id) }}" class="text-decoration-none">
+                                        <strong>{{ test_case.title }}</strong>
+                                    </a>
+                                    <br>
+                                    <small class="text-muted">{{ test_case.description[:50] }}{% if test_case.description|length > 50 %}...{% endif %}</small>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'danger' if test_case.priority == 'High' else 'warning' if test_case.priority == 'Medium' else 'secondary' }}">
+                                        {{ test_case.priority }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ 'success' if test_case.status == 'Active' else 'secondary' if test_case.status == 'Draft' else 'danger' }}">
+                                        {{ test_case.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ test_case.project_id or 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ test_case.created_at[:10] if test_case.created_at else 'N/A' }}</small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{{ url_for('test_case_detail', test_case_id=test_case.id) }}" class="btn btn-outline-primary">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <button class="btn btn-outline-secondary" onclick="editTestCase('{{ test_case.id }}')">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger" onclick="deleteTestCase('{{ test_case.id }}')">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Cards View (Hidden by default) -->
+            <div id="cardsView" style="display: none;" class="p-3">
+                <div class="row">
+                    {% for test_case in test_cases %}
+                    <div class="col-md-6 col-lg-4 mb-3">
+                        <div class="card h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <h6 class="card-title">{{ test_case.title }}</h6>
+                                    <span class="badge bg-{{ 'danger' if test_case.priority == 'High' else 'warning' if test_case.priority == 'Medium' else 'secondary' }}">
+                                        {{ test_case.priority }}
+                                    </span>
+                                </div>
+                                <p class="card-text small text-muted">{{ test_case.description[:80] }}{% if test_case.description|length > 80 %}...{% endif %}</p>
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <span class="badge bg-{{ 'success' if test_case.status == 'Active' else 'secondary' }}">
+                                        {{ test_case.status }}
+                                    </span>
+                                    <a href="{{ url_for('test_case_detail', test_case_id=test_case.id) }}" class="btn btn-sm btn-primary">
+                                        View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-list-check text-muted" style="font-size: 5rem;"></i>
+                <h3 class="text-muted mt-4">No Test Cases Found</h3>
+                <p class="text-muted mb-4">Create your first test case or generate them using AI</p>
+                <div>
+                    <a href="{{ url_for('ai_generator') }}" class="btn btn-success me-2">
+                        <i class="bi bi-robot"></i> Generate with AI
+                    </a>
+                    <button class="btn btn-primary" onclick="createTestCase()">
+                        <i class="bi bi-plus-circle"></i> Create Manually
+                    </button>
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Bulk Actions (when items selected) -->
+<div id="bulkActions" class="mt-3" style="display: none;">
+    <div class="card">
+        <div class="card-body">
+            <div class="d-flex justify-content-between align-items-center">
+                <span id="selectedCount">0 test cases selected</span>
+                <div class="btn-group">
+                    <button class="btn btn-sm btn-outline-secondary" onclick="bulkStatusUpdate('Active')">
+                        Mark as Active
+                    </button>
+                    <button class="btn btn-sm btn-outline-secondary" onclick="bulkStatusUpdate('Draft')">
+                        Mark as Draft
+                    </button>
+                    <button class="btn btn-sm btn-outline-danger" onclick="bulkDelete()">
+                        Delete Selected
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// View toggle
+function toggleView(view) {
+    const tableView = document.getElementById('tableView');
+    const cardsView = document.getElementById('cardsView');
+    const buttons = document.querySelectorAll('.btn-group button');
+    
+    buttons.forEach(btn => btn.classList.remove('active'));
+    
+    if (view === 'table') {
+        tableView.style.display = 'block';
+        cardsView.style.display = 'none';
+        buttons[0].classList.add('active');
+    } else {
+        tableView.style.display = 'none';
+        cardsView.style.display = 'block';
+        buttons[1].classList.add('active');
+    }
+}
+
+// Select all functionality
+document.getElementById('selectAll')?.addEventListener('change', function() {
+    const checkboxes = document.querySelectorAll('.test-case-checkbox');
+    checkboxes.forEach(cb => cb.checked = this.checked);
+    updateBulkActions();
+});
+
+// Individual checkbox handling
+document.querySelectorAll('.test-case-checkbox').forEach(cb => {
+    cb.addEventListener('change', updateBulkActions);
+});
+
+function updateBulkActions() {
+    const checked = document.querySelectorAll('.test-case-checkbox:checked');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    
+    if (checked.length > 0) {
+        bulkActions.style.display = 'block';
+        selectedCount.textContent = `${checked.length} test case${checked.length > 1 ? 's' : ''} selected`;
+    } else {
+        bulkActions.style.display = 'none';
+    }
+}
+
+// Filter functions
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('priorityFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('projectFilter').value = '';
+    // Apply filters logic here
+}
+
+// CRUD operations
+function createTestCase() {
+    // Create a modal for creating test case
+    const modalHtml = `
+        <div class="modal fade" id="createTestCaseModal" tabindex="-1">
+            <div class="modal-dialog modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Create New Test Case</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <form id="createTestCaseForm">
+                            <div class="mb-3">
+                                <label for="newTestCaseTitle" class="form-label">Title *</label>
+                                <input type="text" class="form-control" id="newTestCaseTitle" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newTestCaseDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="newTestCaseDescription" rows="3"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newTestCaseSteps" class="form-label">Test Steps</label>
+                                <textarea class="form-control" id="newTestCaseSteps" rows="4" placeholder="Enter each step on a new line"></textarea>
+                            </div>
+                            <div class="mb-3">
+                                <label for="newTestCaseExpected" class="form-label">Expected Result</label>
+                                <textarea class="form-control" id="newTestCaseExpected" rows="2"></textarea>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-4">
+                                    <label for="newTestCasePriority" class="form-label">Priority</label>
+                                    <select class="form-select" id="newTestCasePriority">
+                                        <option value="Medium" selected>Medium</option>
+                                        <option value="High">High</option>
+                                        <option value="Low">Low</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="newTestCaseStatus" class="form-label">Status</label>
+                                    <select class="form-select" id="newTestCaseStatus">
+                                        <option value="Draft" selected>Draft</option>
+                                        <option value="Active">Active</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label for="newTestCaseProject" class="form-label">Project</label>
+                                    <select class="form-select" id="newTestCaseProject">
+                                        <option value="">Select project...</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-primary" onclick="submitNewTestCase()">
+                            <i class="bi bi-plus-circle"></i> Create Test Case
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    // Remove existing modal if any
+    const existingModal = document.getElementById('createTestCaseModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Add modal to DOM
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    
+    // Load projects for dropdown
+    fetch('/api/projects')
+        .then(response => response.json())
+        .then(projects => {
+            const select = document.getElementById('newTestCaseProject');
+            projects.forEach(project => {
+                select.innerHTML += `<option value="${project.id}">${project.name}</option>`;
+            });
+        });
+    
+    // Show modal
+    const modal = new bootstrap.Modal(document.getElementById('createTestCaseModal'));
+    modal.show();
+}
+
+function submitNewTestCase() {
+    const title = document.getElementById('newTestCaseTitle').value.trim();
+    const description = document.getElementById('newTestCaseDescription').value.trim();
+    const steps = document.getElementById('newTestCaseSteps').value.trim();
+    const expected = document.getElementById('newTestCaseExpected').value.trim();
+    const priority = document.getElementById('newTestCasePriority').value;
+    const status = document.getElementById('newTestCaseStatus').value;
+    const projectId = document.getElementById('newTestCaseProject').value;
+    
+    if (!title) {
+        alert('Please enter a test case title');
+        return;
+    }
+    
+    const stepsArray = steps ? steps.split('\n').filter(step => step.trim()) : [];
+    
+    const testCaseData = {
+        title: title,
+        description: description,
+        steps: stepsArray,
+        expected_result: expected,
+        priority: priority,
+        status: status,
+        project_id: projectId,
+        tags: ['manual']
+    };
+    
+    fetch('/api/test-cases', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(testCaseData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.error) {
+            alert('Error: ' + data.error);
+        } else {
+            bootstrap.Modal.getInstance(document.getElementById('createTestCaseModal')).hide();
+            location.reload();
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating test case');
+    });
+}
+
+function editTestCase(id) {
+    alert(`Edit test case ${id} - feature coming soon!`);
+}
+
+function deleteTestCase(id) {
+    if (confirm('Are you sure you want to delete this test case?')) {
+        // Delete logic here
+        alert(`Test case ${id} deleted (demo)`);
+    }
+}
+
+function bulkStatusUpdate(status) {
+    const checked = document.querySelectorAll('.test-case-checkbox:checked');
+    if (checked.length === 0) return;
+    
+    alert(`Updating ${checked.length} test cases to ${status} status (demo)`);
+}
+
+function bulkDelete() {
+    const checked = document.querySelectorAll('.test-case-checkbox:checked');
+    if (checked.length === 0) return;
+    
+    if (confirm(`Are you sure you want to delete ${checked.length} test cases?`)) {
+        alert(`${checked.length} test cases deleted (demo)`);
+    }
+}
+
+// Search and filter functionality
+document.getElementById('searchInput')?.addEventListener('input', function() {
+    filterTestCases();
+});
+
+document.getElementById('priorityFilter')?.addEventListener('change', function() {
+    filterTestCases();
+});
+
+document.getElementById('statusFilter')?.addEventListener('change', function() {
+    filterTestCases();
+});
+
+document.getElementById('projectFilter')?.addEventListener('change', function() {
+    filterTestCases();
+});
+
+function filterTestCases() {
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const priorityFilter = document.getElementById('priorityFilter')?.value || '';
+    const statusFilter = document.getElementById('statusFilter')?.value || '';
+    const projectFilter = document.getElementById('projectFilter')?.value || '';
+    
+    const rows = document.querySelectorAll('#tableView tbody tr');
+    
+    rows.forEach(row => {
+        const title = row.querySelector('td:nth-child(3)')?.textContent.toLowerCase() || '';
+        const priority = row.querySelector('td:nth-child(4) .badge')?.textContent || '';
+        const status = row.querySelector('td:nth-child(5) .badge')?.textContent || '';
+        
+        const matchesSearch = title.includes(searchTerm);
+        const matchesPriority = !priorityFilter || priority === priorityFilter;
+        const matchesStatus = !statusFilter || status === statusFilter;
+        
+        if (matchesSearch && matchesPriority && matchesStatus) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+function clearFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('priorityFilter').value = '';
+    document.getElementById('statusFilter').value = '';
+    document.getElementById('projectFilter').value = '';
+    filterTestCases();
+}
+
+// Load projects for filter
+document.addEventListener('DOMContentLoaded', function() {
+    fetch('/api/projects')
+        .then(response => response.json())
+        .then(projects => {
+            const select = document.getElementById('projectFilter');
+            projects.forEach(project => {
+                select.innerHTML += `<option value="${project.id}">${project.name}</option>`;
+            });
+        })
+        .catch(error => console.error('Error loading projects:', error));
+});
+</script>
+{% endblock %}

@@ -1,0 +1,206 @@
+{% extends "base.html" %}
+
+{% block title %}Projects - TestGenie Enterprise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="mb-2"><i class="bi bi-folder"></i> Projects</h1>
+            <p class="mb-0">Manage your test projects and organize test activities</p>
+        </div>
+        <button class="btn btn-light" onclick="createProject()">
+            <i class="bi bi-plus-circle"></i> New Project
+        </button>
+    </div>
+</div>
+
+<!-- Projects Grid -->
+<div class="row">
+    {% if projects %}
+        {% for project in projects %}
+        <div class="col-md-4 mb-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <h5 class="card-title">{{ project.name }}</h5>
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" data-bs-toggle="dropdown">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="{{ url_for('project_detail', project_id=project.id) }}">
+                                    <i class="bi bi-eye"></i> View Details
+                                </a></li>
+                                <li><a class="dropdown-item" href="#"><i class="bi bi-pencil"></i> Edit</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="#"><i class="bi bi-trash"></i> Delete</a></li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <p class="card-text text-muted">{{ project.description or 'No description provided' }}</p>
+                    
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="text-primary">
+                                <i class="bi bi-list-check fs-4"></i>
+                                <div class="small text-muted">Test Cases</div>
+                                <strong>0</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-success">
+                                <i class="bi bi-collection fs-4"></i>
+                                <div class="small text-muted">Suites</div>
+                                <strong>0</strong>
+                            </div>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-warning">
+                                <i class="bi bi-play-circle fs-4"></i>
+                                <div class="small text-muted">Runs</div>
+                                <strong>0</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between align-items-center mb-1">
+                            <small class="text-muted">Test Coverage</small>
+                            <small class="text-muted">0%</small>
+                        </div>
+                        <div class="progress" style="height: 6px;">
+                            <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            Created {{ project.created_at[:10] if project.created_at else 'N/A' }}
+                        </small>
+                        <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-primary btn-sm">
+                            Open Project
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="col-12">
+            <div class="text-center py-5">
+                <i class="bi bi-folder-x text-muted" style="font-size: 5rem;"></i>
+                <h3 class="text-muted mt-4">No Projects Found</h3>
+                <p class="text-muted mb-4">Create your first project to start managing test cases and test runs</p>
+                <button class="btn btn-primary btn-lg" onclick="createProject()">
+                    <i class="bi bi-plus-circle"></i> Create Your First Project
+                </button>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Create Project Modal -->
+<div class="modal fade" id="createProjectModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-folder-plus"></i> Create New Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createProjectForm">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="mb-3">
+                                <label for="projectName" class="form-label">Project Name *</label>
+                                <input type="text" class="form-control" id="projectName" placeholder="e.g., E-commerce Platform" required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="projectDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="projectDescription" rows="4" placeholder="Brief description of your testing project..."></textarea>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-light">
+                                <div class="card-body">
+                                    <h6 class="card-title">Project Features</h6>
+                                    <ul class="list-unstyled small">
+                                        <li><i class="bi bi-check text-success"></i> Test Case Management</li>
+                                        <li><i class="bi bi-check text-success"></i> Test Suite Organization</li>
+                                        <li><i class="bi bi-check text-success"></i> Test Execution Tracking</li>
+                                        <li><i class="bi bi-check text-success"></i> AI Test Generation</li>
+                                        <li><i class="bi bi-check text-success"></i> Progress Reporting</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="submitProject()">
+                    <i class="bi bi-plus-circle"></i> Create Project
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function createProject() {
+    const modal = new bootstrap.Modal(document.getElementById('createProjectModal'));
+    modal.show();
+}
+
+function submitProject() {
+    const name = document.getElementById('projectName').value.trim();
+    const description = document.getElementById('projectDescription').value.trim();
+    
+    if (!name) {
+        alert('Please enter a project name');
+        document.getElementById('projectName').focus();
+        return;
+    }
+    
+    const submitBtn = document.querySelector('#createProjectModal .btn-primary');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="bi bi-hourglass-split"></i> Creating...';
+    
+    fetch('/api/projects', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            name: name,
+            description: description
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        // Close modal and reload page
+        bootstrap.Modal.getInstance(document.getElementById('createProjectModal')).hide();
+        location.reload();
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error creating project. Please try again.');
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Create Project';
+    });
+}
+
+// Reset form when modal is closed
+document.getElementById('createProjectModal').addEventListener('hidden.bs.modal', function () {
+    document.getElementById('createProjectForm').reset();
+    const submitBtn = document.querySelector('#createProjectModal .btn-primary');
+    submitBtn.disabled = false;
+    submitBtn.innerHTML = '<i class="bi bi-plus-circle"></i> Create Project';
+});
+</script>
+{% endblock %}

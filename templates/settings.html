@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+
+{% block title %}Settings - TestGenie Enterprise{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="mb-2"><i class="bi bi-gear"></i> Settings</h1>
+    <p class="mb-0">Configure your TestGenie platform settings</p>
+</div>
+
+<div class="row">
+    <div class="col-md-3">
+        <!-- Settings Navigation -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Settings Categories</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="#general" class="list-group-item list-group-item-action active" data-bs-toggle="pill">
+                    <i class="bi bi-gear me-2"></i> General
+                </a>
+                <a href="#users" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                    <i class="bi bi-people me-2"></i> Users & Teams
+                </a>
+                <a href="#projects" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                    <i class="bi bi-folder me-2"></i> Projects
+                </a>
+                <a href="#integrations" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                    <i class="bi bi-puzzle me-2"></i> Integrations
+                </a>
+                <a href="#notifications" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                    <i class="bi bi-bell me-2"></i> Notifications
+                </a>
+                <a href="#security" class="list-group-item list-group-item-action" data-bs-toggle="pill">
+                    <i class="bi bi-shield me-2"></i> Security
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="tab-content">
+            <!-- General Settings -->
+            <div class="tab-pane fade show active" id="general">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-gear"></i> General Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <form>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="platformName" class="form-label">Platform Name</label>
+                                    <input type="text" class="form-control" id="platformName" value="TestGenie Enterprise">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="timezone" class="form-label">Timezone</label>
+                                    <select class="form-select" id="timezone">
+                                        <option selected>UTC</option>
+                                        <option>EST</option>
+                                        <option>PST</option>
+                                        <option>IST</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="dateFormat" class="form-label">Date Format</label>
+                                    <select class="form-select" id="dateFormat">
+                                        <option selected>YYYY-MM-DD</option>
+                                        <option>MM/DD/YYYY</option>
+                                        <option>DD/MM/YYYY</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="language" class="form-label">Language</label>
+                                    <select class="form-select" id="language">
+                                        <option selected>English</option>
+                                        <option>Spanish</option>
+                                        <option>French</option>
+                                        <option>German</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-primary" onclick="saveGeneralSettings()">
+                                <i class="bi bi-save"></i> Save Changes
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users & Teams -->
+            <div class="tab-pane fade" id="users">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0"><i class="bi bi-people"></i> Users & Teams</h5>
+                        <button class="btn btn-primary btn-sm">
+                            <i class="bi bi-plus-circle"></i> Add User
+                        </button>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Email</th>
+                                        <th>Role</th>
+                                        <th>Status</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td>Admin User</td>
+                                        <td>admin@testgenie.com</td>
+                                        <td><span class="badge bg-danger">Admin</span></td>
+                                        <td><span class="badge bg-success">Active</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-secondary">Edit</button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Test Engineer</td>
+                                        <td>tester@testgenie.com</td>
+                                        <td><span class="badge bg-primary">Tester</span></td>
+                                        <td><span class="badge bg-success">Active</span></td>
+                                        <td>
+                                            <button class="btn btn-sm btn-outline-secondary">Edit</button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Other tabs content -->
+            <div class="tab-pane fade" id="projects">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-folder"></i> Project Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i>
+                            Project-specific settings and defaults will be configured here.
+                        </div>
+                        <p>Coming soon: Default project templates, naming conventions, and more.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="integrations">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-puzzle"></i> Integrations</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-kanban fs-1 text-primary"></i>
+                                        <h5 class="mt-2">Jira</h5>
+                                        <p class="text-muted">Connect with Jira for issue tracking</p>
+                                        <button class="btn btn-outline-primary">Configure</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <i class="bi bi-git fs-1 text-success"></i>
+                                        <h5 class="mt-2">GitHub</h5>
+                                        <p class="text-muted">Integrate with GitHub repositories</p>
+                                        <button class="btn btn-outline-success">Configure</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="notifications">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-bell"></i> Notification Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
+                            <label class="form-check-label" for="emailNotifications">
+                                Email notifications
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="testRunNotifications" checked>
+                            <label class="form-check-label" for="testRunNotifications">
+                                Test run completion notifications
+                            </label>
+                        </div>
+                        <div class="form-check form-switch mb-3">
+                            <input class="form-check-input" type="checkbox" id="projectNotifications">
+                            <label class="form-check-label" for="projectNotifications">
+                                Project update notifications
+                            </label>
+                        </div>
+                        <button class="btn btn-primary" onclick="saveNotificationSettings()">
+                            <i class="bi bi-save"></i> Save Settings
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="security">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0"><i class="bi bi-shield"></i> Security Settings</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="alert alert-warning">
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Security settings should be configured by system administrators only.
+                        </div>
+                        <p>Advanced security features coming soon.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function saveGeneralSettings() {
+    alert('General settings saved successfully!');
+}
+
+function saveNotificationSettings() {
+    alert('Notification settings saved successfully!');
+}
+</script>
+{% endblock %}
