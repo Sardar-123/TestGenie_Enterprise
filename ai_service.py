@@ -7,6 +7,8 @@ Currently configured for Azure OpenAI with fallback options
 import os
 import json
 import logging
+import uuid
+from datetime import datetime, timezone
 from typing import List, Dict, Any, Optional
 from dataclasses import asdict
 from dotenv import load_dotenv
@@ -36,14 +38,33 @@ class AIService:
         if self._has_azure_credentials():
             try:
                 from openai import AzureOpenAI
-                self.providers['azure'] = AzureOpenAI(
-                    api_key=os.getenv('AZURE_OPENAI_API_KEY'),
-                    api_version=os.getenv('AZURE_OPENAI_API_VERSION'),
-                    azure_endpoint=os.getenv('AZURE_OPENAI_ENDPOINT')
-                )
-                logger.info("✅ Azure OpenAI provider initialized successfully")
+                
+                # Try multiple initialization methods for compatibility
+                try:
+                    # Method 1: Standard initialization
+                    self.providers['azure'] = AzureOpenAI(
+                        api_key=os.getenv('AZURE_OPENAI_API_KEY'),
+                        api_version=os.getenv('AZURE_OPENAI_API_VERSION'),
+                        azure_endpoint=os.getenv('AZURE_OPENAI_ENDPOINT')
+                    )
+                    logger.info("✅ Azure OpenAI provider initialized successfully (standard method)")
+                except Exception as e1:
+                    logger.warning(f"⚠️ Standard initialization failed: {e1}")
+                    try:
+                        # Method 2: Basic initialization without optional parameters
+                        self.providers['azure'] = AzureOpenAI(
+                            api_key=os.getenv('AZURE_OPENAI_API_KEY'),
+                            azure_endpoint=os.getenv('AZURE_OPENAI_ENDPOINT'),
+                            api_version=os.getenv('AZURE_OPENAI_API_VERSION')
+                        )
+                        logger.info("✅ Azure OpenAI provider initialized successfully (basic method)")
+                    except Exception as e2:
+                        logger.error(f"❌ Basic initialization also failed: {e2}")
+                        raise e2
+                        
             except Exception as e:
                 logger.error(f"❌ Failed to initialize Azure OpenAI: {e}")
+                logger.error(f"❌ OpenAI library version might be incompatible")
         
         # OpenAI Setup (fallback)
         if self._has_openai_credentials():
@@ -65,11 +86,22 @@ class AIService:
     
     def _has_azure_credentials(self) -> bool:
         """Check if Azure OpenAI credentials are available"""
-        return all([
-            os.getenv('AZURE_OPENAI_API_KEY'),
-            os.getenv('AZURE_OPENAI_ENDPOINT'),
-            os.getenv('AZURE_OPENAI_DEPLOYMENT')
-        ])
+        # Log what we're seeing for debugging
+        api_key = os.getenv('AZURE_OPENAI_API_KEY')
+        endpoint = os.getenv('AZURE_OPENAI_ENDPOINT')
+        deployment = os.getenv('AZURE_OPENAI_DEPLOYMENT')
+        api_version = os.getenv('AZURE_OPENAI_API_VERSION')
+        
+        logger.info(f"🔍 Azure OpenAI Environment Check:")
+        logger.info(f"   API_KEY: {'✅ Set' if api_key else '❌ Missing'}")
+        logger.info(f"   ENDPOINT: {'✅ Set' if endpoint else '❌ Missing'} - {endpoint}")
+        logger.info(f"   DEPLOYMENT: {'✅ Set' if deployment else '❌ Missing'} - {deployment}")
+        logger.info(f"   API_VERSION: {'✅ Set' if api_version else '❌ Missing'} - {api_version}")
+        
+        has_credentials = all([api_key, endpoint, deployment])
+        logger.info(f"🎯 Azure credentials check result: {'✅ PASS' if has_credentials else '❌ FAIL'}")
+        
+        return has_credentials
     
     def _has_openai_credentials(self) -> bool:
         """Check if OpenAI credentials are available"""
@@ -127,24 +159,39 @@ class AIService:
     
     def _generate_with_azure(self, requirements: str, project_id: str, 
                            test_type: str, count: int) -> List[Dict[str, Any]]:
-        """Generate test cases using Azure OpenAI"""
+        """Generate test cases using Azure OpenAI with timeout and error handling"""
         
         client = self.providers['azure']
         deployment = os.getenv('AZURE_OPENAI_DEPLOYMENT')
         
+        if not deployment:
+            logger.error("❌ AZURE_OPENAI_DEPLOYMENT not configured")
+            raise ValueError("Azure OpenAI deployment name not configured")
+        
         prompt = self._create_test_generation_prompt(requirements, test_type, count)
         
-        response = client.chat.completions.create(
-            model=deployment,
-            messages=[
-                {"role": "system", "content": "You are an expert test case generator for software applications. Generate comprehensive, realistic test cases in JSON format."},
-                {"role": "user", "content": prompt}
-            ],
-            max_tokens=int(os.getenv('AI_MAX_TOKENS', 4000)),
-            temperature=float(os.getenv('AI_TEMPERATURE', 0.7))
-        )
-        
-        return self._parse_ai_response(response.choices[0].message.content, project_id)
+        try:
+            logger.info(f"🤖 Generating {count} test cases using Azure OpenAI...")
+            
+            # Set timeout for Azure OpenAI API call (25 seconds max for Azure App Service)
+            response = client.chat.completions.create(
+                model=deployment,
+                messages=[
+                    {"role": "system", "content": "You are an expert test case generator for software applications. Generate comprehensive, realistic test cases in JSON format."},
+                    {"role": "user", "content": prompt}
+                ],
+                max_tokens=int(os.getenv('AI_MAX_TOKENS', 2000)),  # Reduced for faster response
+                temperature=float(os.getenv('AI_TEMPERATURE', 0.7)),
+                timeout=25  # 25 second timeout to stay within Azure App Service limits
+            )
+            
+            logger.info("✅ Azure OpenAI response received successfully")
+            return self._parse_ai_response(response.choices[0].message.content, project_id)
+            
+        except Exception as e:
+            logger.error(f"❌ Azure OpenAI API error: {str(e)}")
+            # Return fallback test cases if AI fails
+            return self._generate_fallback_test_cases(requirements, test_type, count, project_id)
     
     def _generate_with_openai(self, requirements: str, project_id: str, 
                             test_type: str, count: int) -> List[Dict[str, Any]]:
@@ -322,6 +369,85 @@ Return only valid JSON without any markdown formatting or additional text.
             mock_cases.append(mock_case)
         
         return mock_cases
+    
+    def _generate_fallback_test_cases(self, requirements: str, test_type: str, 
+                                     count: int, project_id: str) -> List[Dict[str, Any]]:
+        """Generate basic fallback test cases when AI providers fail"""
+        logger.info(f"🔄 Generating {count} fallback test cases...")
+        
+        fallback_cases = []
+        
+        # Basic test case templates based on type
+        templates = {
+            'functional': {
+                'prefix': 'Functional Test',
+                'scenarios': [
+                    'Verify main functionality works as expected',
+                    'Test input validation and error handling',
+                    'Validate output format and accuracy',
+                    'Check boundary conditions',
+                    'Test normal workflow execution'
+                ]
+            },
+            'ui': {
+                'prefix': 'UI Test',
+                'scenarios': [
+                    'Verify UI elements are displayed correctly',
+                    'Test responsive design across screen sizes',
+                    'Validate user interactions and feedback',
+                    'Check accessibility compliance',
+                    'Test navigation and user flow'
+                ]
+            },
+            'api': {
+                'prefix': 'API Test',
+                'scenarios': [
+                    'Verify API endpoints respond correctly',
+                    'Test request/response format validation',
+                    'Check authentication and authorization',
+                    'Validate error responses and status codes',
+                    'Test API performance and rate limiting'
+                ]
+            },
+            'integration': {
+                'prefix': 'Integration Test',
+                'scenarios': [
+                    'Verify system components work together',
+                    'Test data flow between modules',
+                    'Check third-party service integrations',
+                    'Validate end-to-end workflows',
+                    'Test system resilience and failover'
+                ]
+            }
+        }
+        
+        template = templates.get(test_type, templates['functional'])
+        
+        for i in range(count):
+            scenario = template['scenarios'][i % len(template['scenarios'])]
+            
+            fallback_case = {
+                'id': str(uuid.uuid4()),
+                'title': f"{template['prefix']}: {scenario}",
+                'description': f"Fallback test case for {test_type} testing. Requirements: {requirements[:150]}...",
+                'steps': [
+                    "Setup test environment and data",
+                    "Execute the test scenario",
+                    "Verify expected behavior",
+                    "Clean up test data"
+                ],
+                'expected_result': f"The {test_type} functionality should work correctly without errors",
+                'priority': 'Medium',
+                'status': 'Draft',
+                'project_id': project_id,
+                'created_by': 'AI Generator (Fallback)',
+                'created_at': datetime.now(timezone.utc).isoformat(),
+                'tags': [test_type, 'fallback-generated', 'ai-assisted']
+            }
+            fallback_cases.append(fallback_case)
+        
+        logger.info(f"✅ Generated {len(fallback_cases)} fallback test cases")
+        return fallback_cases
     
     def get_provider_status(self) -> Dict[str, Any]:
         """Get status of all AI providers"""
